@@ -188,7 +188,7 @@ export default {
       }
     },
     isIsoSelected () {
-      if (this.isIsoSelected || this.isRootDiskOffering) {
+      if (this.isIsoSelected) {
         this.dataItems = this.dataItems.filter(item => item.id !== '0')
       } else {
         this.dataItems.unshift({
