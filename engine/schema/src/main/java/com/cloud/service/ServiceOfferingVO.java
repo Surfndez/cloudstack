@@ -422,11 +422,6 @@ public class ServiceOfferingVO implements ServiceOffering {
     }
 
     @Override
-    public boolean isUseLocalStorage() {
-        return false;
-    }
-
-    @Override
     public boolean isDynamicScalingEnabled() {
         return dynamicScalingEnabled;
     }
