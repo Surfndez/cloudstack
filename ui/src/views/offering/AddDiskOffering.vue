@@ -445,12 +445,12 @@ import { api } from '@/api'
 
 export default {
   name: 'AddDiskOffering',
-  props: {
-    resource: {
-      type: Object,
-      required: true
-    }
-  },
+  // props: {
+  //   resource: {
+  //     type: Object,
+  //     required: true
+  //   }
+  // },
   components: {
   },
   data () {
