@@ -467,9 +467,9 @@
             <span slot="label">
               {{ $t('label.iscomputeonly.offering') }}
             </span>
-            <a-switch v-decorator="['diskofferingselection', {initialValue: diskofferingselection}]" :checked="diskofferingselection" @change="val => { diskofferingselection = val }"/>
+            <a-switch v-decorator="['computeonly', {initialValue: computeonly}]" :checked="computeonly" @change="val => { computeonly = val }"/>
           </a-form-item>
-          <span v-if="!diskofferingselection">
+          <span v-if="computeonly">
             <a-form-item>
               <span slot="label">
                 {{ $t('label.storagetype') }}
@@ -730,7 +730,7 @@
               </a-select>
             </a-form-item>
           </span>
-          <span v-if="diskofferingselection">
+          <span v-if="!computeonly">
             <a-form-item>
               <a-button type="primary" @click="addDiskOffering()"> {{ $t('label.add.disk.offering') }} </a-button>
               <a-modal
@@ -741,7 +741,7 @@
                 :closable="true"
                 @cancel="closeDiskOfferingModal"
                 width="auto">
-                <add-disk-offering @close-action="closeDiskOfferingModal()"/>
+                <add-disk-offering @close-action="closeDiskOfferingModal()" @publish-disk-offering-id="($event) => updateSelectedDiskOffering($event)"/>
               </a-modal>
               <br /><br />
               <a-form-item :label="$t('label.disk.offerings')">
@@ -862,7 +862,7 @@ export default {
       loading: false,
       dynamicscalingenabled: true,
       diskofferingstrictness: false,
-      diskofferingselection: false,
+      computeonly: true,
       diskOfferingLoading: false,
       diskOfferings: [],
       selectedDiskOfferingId: ''
@@ -912,10 +912,17 @@ export default {
         listall: true
       }).then(json => {
         this.diskOfferings = json.listdiskofferingsresponse.diskoffering || []
-        this.selectedDiskOfferingId = this.diskOfferings[0].id || ''
+        if (this.selectedDiskOfferingId === '') {
+          this.selectedDiskOfferingId = this.diskOfferings[0].id || ''
+        }
       }).finally(() => {
         this.diskOfferingLoading = false
       })
+    },
+    updateSelectedDiskOffering (id) {
+      if (id) {
+        this.selectedDiskOfferingId = id
+      }
     },
     closeDiskOfferingModal () {
       this.fetchDiskOfferings()
@@ -1049,6 +1056,9 @@ export default {
           limitcpuuse: values.limitcpuuse === true,
           dynamicscalingenabled: values.dynamicscalingenabled,
           diskofferingstrictness: values.diskofferingstrictness
+        }
+        if (values.diskofferingid) {
+          params.diskofferingid = values.diskofferingid
         }
 
         // custom fields (begin)
