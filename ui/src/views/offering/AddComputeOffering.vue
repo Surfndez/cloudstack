@@ -462,13 +462,13 @@
             </a-select-option>
           </a-select>
         </a-form-item>
+        <a-form-item>
+          <span slot="label">
+            {{ $t('label.iscomputeonly.offering') }}
+          </span>
+          <a-switch v-decorator="['computeonly', {initialValue: computeonly}]" :checked="computeonly" @change="val => { computeonly = val }"/>
+        </a-form-item>
         <a-card>
-          <a-form-item>
-            <span slot="label">
-              {{ $t('label.iscomputeonly.offering') }}
-            </span>
-            <a-switch v-decorator="['computeonly', {initialValue: computeonly}]" :checked="computeonly" @change="val => { computeonly = val }"/>
-          </a-form-item>
           <span v-if="computeonly">
             <a-form-item>
               <span slot="label">
