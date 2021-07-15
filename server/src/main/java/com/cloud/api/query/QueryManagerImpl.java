@@ -31,7 +31,6 @@ import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
-import com.cloud.storage.dao.VMTemplateDetailsDao;
 import com.cloud.vm.VirtualMachineManager;
 import org.apache.cloudstack.acl.ControlledEntity.ACLType;
 import org.apache.cloudstack.affinity.AffinityGroupDomainMapVO;
@@ -191,6 +190,7 @@ import com.cloud.network.router.VirtualNetworkApplianceManager;
 import com.cloud.network.security.SecurityGroupVMMapVO;
 import com.cloud.network.security.dao.SecurityGroupVMMapDao;
 import com.cloud.org.Grouping;
+import com.cloud.offering.DiskOffering;
 import com.cloud.projects.Project;
 import com.cloud.projects.Project.ListProjectResourcesCriteria;
 import com.cloud.projects.ProjectInvitation;
@@ -216,8 +216,10 @@ import com.cloud.storage.DiskOfferingVO;
 import com.cloud.storage.VMTemplateVO;
 import com.cloud.storage.Volume;
 import com.cloud.storage.dao.StoragePoolTagsDao;
+import com.cloud.storage.dao.VMTemplateDetailsDao;
 import com.cloud.storage.dao.VMTemplateDao;
 import com.cloud.storage.dao.DiskOfferingDao;
+import com.cloud.storage.dao.VolumeDao;
 import com.cloud.tags.ResourceTagVO;
 import com.cloud.tags.dao.ResourceTagDao;
 import com.cloud.template.VirtualMachineTemplate.State;
@@ -431,6 +433,9 @@ public class QueryManagerImpl extends MutualExclusiveIdsManagerBase implements Q
 
     @Inject
     private VirtualMachineManager virtualMachineManager;
+
+    @Inject
+    private VolumeDao volumeDao;
 
     /*
      * (non-Javadoc)
@@ -2775,6 +2780,7 @@ public class QueryManagerImpl extends MutualExclusiveIdsManagerBase implements Q
         Boolean isRootAdmin = _accountMgr.isRootAdmin(account.getAccountId());
         Boolean isRecursive = cmd.isRecursive();
         Long zoneId = cmd.getZoneId();
+        Long volumeId = cmd.getVolumeId();
         // Keeping this logic consistent with domain specific zones
         // if a domainId is provided, we just return the disk offering
         // associated with this domain
@@ -2829,6 +2835,22 @@ public class QueryManagerImpl extends MutualExclusiveIdsManagerBase implements Q
             SearchCriteria<DiskOfferingJoinVO> zoneSC = sb.create();
             zoneSC.setParameters("zoneId", String.valueOf(zoneId));
             sc.addAnd("zoneId", SearchCriteria.Op.SC, zoneSC);
+        }
+
+        DiskOffering currentDiskOffering = null;
+        if (volumeId != null) {
+            Volume volume = volumeDao.findById(volumeId);
+            if (volume == null) {
+                throw new InvalidParameterValueException(String.format("Unable to find a volume with specified id %s", volumeId));
+            }
+            currentDiskOffering = _diskOfferingDao.findByIdIncludingRemoved(volume.getDiskOfferingId());
+            if (!currentDiskOffering.isComputeOnly() && currentDiskOffering.getDiskSizeStrictness()) {
+                SearchCriteria<DiskOfferingJoinVO> ssc = _diskOfferingJoinDao.createSearchCriteria();
+                ssc.addOr("diskSize", Op.EQ, volume.getSize());
+                ssc.addOr("customized", SearchCriteria.Op.EQ, true);
+                sc.addAnd("diskSizeOrCustomized", SearchCriteria.Op.SC, ssc);
+            }
+            sc.addAnd("diskSizeStrictness", Op.EQ, currentDiskOffering.getDiskSizeStrictness());
         }
 
         // FIXME: disk offerings should search back up the hierarchy for
